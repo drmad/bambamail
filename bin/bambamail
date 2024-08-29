@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+import sys, os, logging, shutil, signal
+from bambamail import run, config
+from bambamail.configurator import Configurator
+from bambamail.maildir import Maildir
+
+logging.basicConfig(
+    format = '%(message)s',
+    level = logging.INFO
+)
+
+if '--dump-default-config' in sys.argv:
+    config.dump()
+    sys.exit()
+
+# El fichero de configuración siempre debe venir en el 1er parámetro
+try:
+    config.read_from_file(sys.argv[1])
+except IndexError:
+    pass
+
+# Verificamos si ya existe un PIDfile
+if os.path.exists(config.pid_file):
+    with open(config.pid_file) as f:
+        pid = int(f.read())
+
+    # Queremos salir?
+    if '--quit' in sys.argv:
+        logging.info("Sending SIGTERM to running BambaMail instance.")
+        os.kill(pid, signal.SIGTERM)
+        sys.exit()
+
+    # Si existe, salimos tranquilamento
+    logging.info("BambaMail is already running with this config. Exiting.")
+    sys.exit()
+
+
+
+if config.clear_maildir_on_start:
+    logging.info("Removing Maildir before starting...")
+    shutil.rmtree(config.maildir_path, ignore_errors = True)
+
+if config_file := config.get_configuration_file():
+    logging.info("Starting BambaMail with configuration file " + str(config_file))
+else:
+    logging.info("Starting BambaMail with default configuration on path " + os.getcwd())
+
+if config.log_file:
+    logging.basicConfig(filename = config.path_relative_to_configuration_file(
+        config.log_file
+    ))
+
+# Creamos el maildir
+Maildir.create_maildir()
+
+# Configuramos un sigterm handler
+def sigterm_handler(signum, frame):
+    # Eliminamos el PIDfile
+    os.unlink(config.pid_file)
+
+    # Y bu-bye
+    sys.exit()
+
+signal.signal(signal.SIGTERM, sigterm_handler)
+
+# Nos forkeamos
+if pid := os.fork():
+    with open(config.pid_file, 'w') as f:
+        f.write(str(pid))
+
+    sys.exit()
+
+run()
