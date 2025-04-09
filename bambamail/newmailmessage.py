@@ -49,6 +49,10 @@ class NewMailMessage:
         # Generamos el nombre del fichero a partir de 'to' y 'subject's.
         to = re.sub(r'\W+', '_', self.message_headers['to'])
         subject = re.sub(r'\W+', '_', self.message_headers['subject'])
+
+        # Por si acaso, limitamos el tamaño del subjectr
+        subject = subject[0:64]
+
         eml_filename = str(time.time()) + '-' + to + '-' + subject + '.eml'
 
         os.link(target_path, Path(self.maildir_path, 'eml', eml_filename))
