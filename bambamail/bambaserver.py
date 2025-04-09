@@ -28,7 +28,7 @@ class BambaServer(socketserver.StreamRequestHandler):
         return f'250 Teh ferpection'
 
     def data(self, payload) -> str:
-        self.new_message = Maildir().new_message()
+        self.new_message = Maildir().new_message(self.message_headers)
         self.reading_message_header = True
         return f'354 Ferpetto, mein Kumpel. Manda correo noma'
 
@@ -67,7 +67,7 @@ class BambaServer(socketserver.StreamRequestHandler):
     def handle(self):
 
         # Saludamos
-        self.write("220 The SMTP")
+        self.write("220 The Bambamail SMTP bambaserver")
 
         while True:
             data = self.rfile.readline().rstrip().decode()
