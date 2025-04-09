@@ -13,6 +13,12 @@ if '--dump-default-config' in sys.argv:
     config.dump()
     sys.exit()
 
+QUITTING = False
+if '--quit' in sys.argv:
+    # Para salir, primero tenemos que obtener el PID, que se realiza más abajo
+    sys.argv.remove('--quit')
+    QUITTING = True
+
 # El fichero de configuración siempre debe venir en el 1er parámetro
 try:
     config.read_from_file(sys.argv[1])
@@ -25,7 +31,7 @@ if os.path.exists(config.pid_file):
         pid = int(f.read())
 
     # Queremos salir?
-    if '--quit' in sys.argv:
+    if QUITTING:
         logging.info("Sending SIGTERM to running BambaMail instance.")
         os.kill(pid, signal.SIGTERM)
         sys.exit()
